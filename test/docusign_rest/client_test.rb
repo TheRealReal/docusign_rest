@@ -262,6 +262,16 @@ describe DocusignRest::Client do
           # NOTE manually check that this file has the content you'd expect
         end
       end
+
+      it "should void the envelope" do
+        VCR.use_cassette("void_envelope") do
+          response = @client.void_envelope(
+            envelope_id: @envelope_response["envelopeId"],
+          )
+
+          response.must_be_kind_of(Net::HTTPSuccess)
+        end
+      end
     end
   end
 end
