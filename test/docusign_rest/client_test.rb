@@ -272,6 +272,17 @@ describe DocusignRest::Client do
           response.must_be_kind_of(Net::HTTPSuccess)
         end
       end
+
+      it "should get envelope's sender view" do
+        VCR.use_cassette("get_envelope_sender_view") do
+          response = @client.get_sender_view(
+            envelope_id: @envelope_response["envelopeId"],
+          )
+
+          response['errorCode'].must_be_nil
+          response['url'].must_match(/http/)
+        end
+      end
     end
   end
 end
