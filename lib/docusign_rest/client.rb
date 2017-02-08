@@ -573,28 +573,29 @@ module DocusignRest
 
     # Public: creates an envelope from a document directly without a template
     #
-    # file_io       - Optional: an opened file stream of data (if you don't
-    #                 want to save the file to the file system as an incremental
-    #                 step)
-    # file_path     - Required if you don't provide a file_io stream, this is
-    #                 the local path of the file you wish to upload. Absolute
-    #                 paths recommended.
-    # file_name     - The name you want to give to the file you are uploading
-    # content_type  - (for the request body) application/json is what DocuSign
-    #                 is expecting
-    # email_subject - (Optional) short subject line for the email
-    # email_body    - (Optional) custom text that will be injected into the
-    #                 DocuSign generated email
-    # signers       - A hash of users who should receive the document and need
-    #                 to sign it. More info about the options available for
-    #                 this method are documented above it's method definition.
-    # status        - Options include: 'sent', 'created', 'voided' and determine
-    #                 if the envelope is sent out immediately or stored for
-    #                 sending at a later time
-    # customFields  - (Optional) A hash of listCustomFields and textCustomFields.
-    #                 Each contains an array of corresponding customField hashes.
-    #                 For details, please see: http://bit.ly/1FnmRJx
-    # headers       - Allows a client to pass in some
+    # file_io        - Optional: an opened file stream of data (if you don't
+    #                  want to save the file to the file system as an incremental
+    #                  step)
+    # file_path      - Required if you don't provide a file_io stream, this is
+    #                  the local path of the file you wish to upload. Absolute
+    #                  paths recommended.
+    # file_name      - The name you want to give to the file you are uploading
+    # content_type   - (for the request body) application/json is what DocuSign
+    #                  is expecting
+    # email/subject  - (Optional) short subject line for the email
+    # email/body     - (Optional) custom text that will be injected into the
+    #                  DocuSign generated email
+    # email/reply_to - Sets the Reply-To email used for the envelope
+    # signers        - A hash of users who should receive the document and need
+    #                  to sign it. More info about the options available for
+    #                  this method are documented above it's method definition.
+    # status         - Options include: 'sent', 'created', 'voided' and determine
+    #                  if the envelope is sent out immediately or stored for
+    #                  sending at a later time
+    # customFields   - (Optional) A hash of listCustomFields and textCustomFields.
+    #                  Each contains an array of corresponding customField hashes.
+    #                  For details, please see: http://bit.ly/1FnmRJx
+    # headers        - Allows a client to pass in some
     #
     # Returns a JSON parsed response object containing:
     #   envelopeId     - The envelope's ID
@@ -605,16 +606,13 @@ module DocusignRest
       ios = create_file_ios(options[:files])
       file_params = create_file_params(ios)
 
-      post_body = {
-        emailBlurb:   "#{options[:email][:body] if options[:email]}",
-        emailSubject: "#{options[:email][:subject] if options[:email]}",
+      post_body = envelope_base_body(options).merge(
         documents: get_documents(ios),
         recipients: {
           signers: get_signers(options[:signers])
         },
-        status: "#{options[:status]}",
         customFields: options[:custom_fields]
-      }.to_json
+      ).to_json
 
       uri = build_uri("/accounts/#{acct_id}/envelopes")
 
@@ -712,6 +710,7 @@ module DocusignRest
     #                  stored for sending at a later time
     # email/body     - Sets the text in the email body
     # email/subject  - Sets the text in the email subject line
+    # email/reply_to - Sets the Reply-To email used for the envelope
     # template_id    - The id of the template upon which we want to base this
     #                  envelope
     # template_roles - See the get_template_roles method definition for a list
@@ -729,15 +728,12 @@ module DocusignRest
       content_type = { 'Content-Type' => 'application/json' }
       content_type.merge(options[:headers]) if options[:headers]
 
-      post_body = {
-        status:             options[:status],
-        emailBlurb:         options[:email][:body],
-        emailSubject:       options[:email][:subject],
+      post_body = envelope_base_body(options).merge(
         templateId:         options[:template_id],
         eventNotification:  get_event_notification(options[:event_notification]),
         templateRoles:      get_template_roles(options[:signers]),
         customFields:       options[:custom_fields]
-      }.to_json
+      ).to_json
 
       uri = build_uri("/accounts/#{acct_id}/envelopes")
 
@@ -760,6 +756,7 @@ module DocusignRest
     #                         stored for sending at a later time
     # email/body            - Sets the text in the email body
     # email/subject         - Sets the text in the email subject line
+    # email/reply_to        - Sets the Reply-To email used for the envelope
     # template_roles        - See the get_template_roles method definition for a list
     #                         of options to pass. Note: for consistency sake we call
     #                         this 'signers' and not 'templateRoles' when we build up
@@ -778,12 +775,9 @@ module DocusignRest
       ios = create_file_ios(options[:files])
       file_params = create_file_params(ios)
 
-      post_body = {
-        emailBlurb:        "#{options[:email][:body] if options[:email]}",
-        emailSubject:      "#{options[:email][:subject] if options[:email]}",
-        status:             options[:status],
+      post_body = envelope_base_body(options).merge(
         compositeTemplates: get_composite_template(options[:server_template_ids], options[:signers], options[:files])
-      }.to_json
+      ).to_json
 
       uri = build_uri("/accounts/#{acct_id}/envelopes")
 
@@ -1427,6 +1421,24 @@ module DocusignRest
 
       response = http.request(request)
       JSON.parse(response.body)
+    end
+
+    private
+
+    def envelope_base_body(options = {})
+      base_body = { status: options[:status] }
+
+      if options[:email]
+        base_body.merge!(
+          emailBlurb: options[:email][:body],
+          emailSubject: options[:email][:subject],
+          emailSettings: {
+            replyEmailAddressOverride: options[:email][:reply_to]
+          }
+        )
+      end
+
+      base_body
     end
   end
 end
