@@ -585,7 +585,7 @@ module DocusignRest
     # email/subject  - (Optional) short subject line for the email
     # email/body     - (Optional) custom text that will be injected into the
     #                  DocuSign generated email
-    # email/reply_to - Sets the Reply-To email used for the envelope
+    # email/reply_to - (Optional) Sets the Reply-To email used for the envelope
     # signers        - A hash of users who should receive the document and need
     #                  to sign it. More info about the options available for
     #                  this method are documented above it's method definition.
