@@ -87,7 +87,8 @@ describe DocusignRest::Client do
         response = @client.create_envelope_from_document(
           email: {
             subject: "test email subject",
-            body: "this is the email body and it's large!"
+            body: "this is the email body and it's large!",
+            reply_to: "no-reply@example.com"
           },
           # If embedded is set to true  in the signers array below, emails
           # don't go out and you can embed the signature page in an iFrame
@@ -194,7 +195,8 @@ describe DocusignRest::Client do
             status: 'sent',
             email: {
               subject: "The test email subject envelope",
-              body: "Envelope body content here"
+              body: "Envelope body content here",
+              reply_to: "no-reply@example.com"
             },
             template_id: @template_response["templateId"],
             signers: [
